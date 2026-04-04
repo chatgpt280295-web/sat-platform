@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { generateTempPassword } from '@/lib/utils'
 
+// ── Tạo học sinh (hiển thị password trên UI) ─────────────────────
 export async function createStudent(formData: FormData) {
   const email     = formData.get('email')     as string
   const fullName  = formData.get('full_name') as string
@@ -40,6 +41,43 @@ export async function createStudent(formData: FormData) {
   return { success: true, tempPassword }
 }
 
+// ── Import học sinh từ CSV ────────────────────────────────────────
+export async function importStudentsFromCSV(
+  rows: { email: string; full_name: string; expires_at?: string }[]
+): Promise<{ success: boolean; email: string; full_name: string; error?: string }[]> {
+  const admin = createAdminClient()
+  const results = []
+
+  for (const row of rows) {
+    try {
+      const tempPassword = generateTempPassword()
+      const { data: authUser, error: authError } = await admin.auth.admin.createUser({
+        email: row.email, password: tempPassword, email_confirm: true,
+      })
+      if (authError) {
+        results.push({ success: false, email: row.email, full_name: row.full_name, error: authError.message })
+        continue
+      }
+      const { error: profileError } = await admin.from('users').insert({
+        auth_id: authUser.user.id,
+        email: row.email, full_name: row.full_name,
+        role: 'student', status: 'active',
+      })
+      if (profileError) {
+        results.push({ success: false, email: row.email, full_name: row.full_name, error: profileError.message })
+        continue
+      }
+      results.push({ success: true, email: row.email, full_name: row.full_name })
+    } catch (e: any) {
+      results.push({ success: false, email: row.email, full_name: row.full_name, error: e.message })
+    }
+  }
+
+  revalidatePath('/admin/users')
+  return results
+}
+
+// ── Bật/tắt trạng thái học sinh ──────────────────────────────────
 export async function toggleUserStatus(userId: string, currentStatus: string) {
   const admin = createAdminClient()
   const newStatus = currentStatus === 'active' ? 'inactive' : 'active'
@@ -56,6 +94,7 @@ export async function toggleUserStatus(userId: string, currentStatus: string) {
   return { success: true }
 }
 
+// ── Xóa học sinh ─────────────────────────────────────────────────
 export async function deleteStudent(userId: string) {
   const admin = createAdminClient()
   const { data: profile } = await admin.from('users').select('auth_id').eq('id', userId).single()
@@ -67,7 +106,7 @@ export async function deleteStudent(userId: string) {
   return { success: true }
 }
 
-// ── NEW: Admin resets student password ───────────────────────────────────────
+// ── Admin đặt lại mật khẩu cho học sinh ──────────────────────────
 export async function resetStudentPassword(userId: string, newPassword: string) {
   if (!newPassword || newPassword.length < 6) {
     return { error: 'Mật khẩu phải có ít nhất 6 ký tự' }
