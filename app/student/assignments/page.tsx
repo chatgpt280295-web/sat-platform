@@ -53,9 +53,10 @@ export default async function StudentAssignmentsPage() {
   // Bước 4: Sessions đã hoàn thành
   const { data: sessions } = await supabase
     .from('sessions')
-    .select('assignment_id, score, finished_at')
+    .select('id, assignment_id, score, finished_at')
     .eq('user_id', profile.id)
     .not('finished_at', 'is', null)
+    .order('finished_at', { ascending: false })
 
   const sessionMap = new Map(sessions?.map(s => [s.assignment_id, s]) ?? [])
   const now = new Date()
@@ -161,7 +162,10 @@ export default async function StudentAssignmentsPage() {
                   </div>
                 </div>
 
-                <Link href={`/student/assignments/${a.id}`}
+                <Link
+                  href={done
+                    ? `/student/sessions/${session!.id}`
+                    : `/student/assignments/${a.id}`}
                   className={`shrink-0 px-4 py-2 rounded-xl text-sm font-medium transition-colors whitespace-nowrap ${
                     done
                       ? 'bg-gray-100 hover:bg-gray-200 text-gray-600'

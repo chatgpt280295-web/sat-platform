@@ -13,16 +13,31 @@ export async function startOrGetSession(assignmentId: string) {
     .from('users').select('id').eq('auth_id', user.id).single()
   if (!profile) return { error: 'Không tìm thấy user' }
 
+  // Kiểm tra session đã hoàn thành — nếu có, trả về để redirect xem lại
+  const { data: finished } = await supabase
+    .from('sessions')
+    .select('id')
+    .eq('user_id', profile.id)
+    .eq('assignment_id', assignmentId)
+    .not('finished_at', 'is', null)
+    .order('finished_at', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+
+  if (finished) return { success: true, sessionId: finished.id, finished: true }
+
+  // Session đang làm dở
   const { data: existing } = await supabase
     .from('sessions')
     .select('id')
     .eq('user_id', profile.id)
     .eq('assignment_id', assignmentId)
     .is('finished_at', null)
-    .single()
+    .maybeSingle()
 
-  if (existing) return { success: true, sessionId: existing.id }
+  if (existing) return { success: true, sessionId: existing.id, finished: false }
 
+  // Tạo session mới
   const { count } = await supabase
     .from('assignment_questions').select('*', { count: 'exact', head: true })
     .eq('assignment_id', assignmentId)
@@ -35,7 +50,7 @@ export async function startOrGetSession(assignmentId: string) {
   }).select('id').single()
 
   if (error) return { error: error.message }
-  return { success: true, sessionId: session.id }
+  return { success: true, sessionId: session.id, finished: false }
 }
 
 export async function submitSession(

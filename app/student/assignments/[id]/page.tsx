@@ -37,6 +37,13 @@ export default function TakeAssignmentPage() {
 
       const res = await startOrGetSession(id)
       if (res.error) { setError(res.error); setLoading(false); return }
+
+      // Nếu đã hoàn thành → redirect sang trang xem lại
+      if (res.finished && res.sessionId) {
+        router.replace(`/student/sessions/${res.sessionId}`)
+        return
+      }
+
       setSessionId(res.sessionId ?? '')
       setLoading(false)
     }
