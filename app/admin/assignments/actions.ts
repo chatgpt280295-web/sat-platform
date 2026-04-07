@@ -53,6 +53,81 @@ export async function removeQuestionFromAssignment(assignmentId: string, questio
   return { success: true }
 }
 
+// Trả về số câu available theo từng (skill, difficulty)
+export async function getAvailableCountMatrix(excludeIds: string[]) {
+  const admin = createAdminClient()
+  let q = admin.from('questions').select('id, domain, skill, difficulty')
+  if (excludeIds.length > 0)
+    q = (q as any).not('id', 'in', `(${excludeIds.join(',')})`)
+  const { data } = await q
+  // Build map: `${skill}__${difficulty}` → count
+  const matrix: Record<string, number> = {}
+  for (const row of data ?? []) {
+    const key = `${row.skill}__${row.difficulty}`
+    matrix[key] = (matrix[key] ?? 0) + 1
+  }
+  return matrix
+}
+
+// config: mảng { skill, domain, easy, medium, hard }
+export async function addRandomQuestionsToAssignment(
+  assignmentId: string,
+  config: Array<{ skill: string; domain: string; easy: number; medium: number; hard: number }>
+) {
+  const admin = createAdminClient()
+
+  const { data: existing } = await admin
+    .from('assignment_questions').select('question_id').eq('assignment_id', assignmentId)
+  const excludeIds = (existing ?? []).map((r: any) => r.question_id)
+
+  const { data: maxPosRow } = await admin
+    .from('assignment_questions').select('position')
+    .eq('assignment_id', assignmentId).order('position', { ascending: false }).limit(1).maybeSingle()
+  let pos = (maxPosRow?.position ?? -1) + 1
+
+  const toInsert: Array<{ assignment_id: string; question_id: string; position: number }> = []
+  const warnings: string[] = []
+
+  for (const row of config) {
+    const diffs: Array<{ diff: string; count: number }> = [
+      { diff: 'Easy',   count: row.easy   },
+      { diff: 'Medium', count: row.medium },
+      { diff: 'Hard',   count: row.hard   },
+    ].filter(d => d.count > 0)
+
+    for (const { diff, count } of diffs) {
+      let q = admin.from('questions').select('id')
+        .eq('skill', row.skill).eq('difficulty', diff)
+      if (excludeIds.length > 0)
+        q = (q as any).not('id', 'in', `(${excludeIds.join(',')})`)
+
+      const { data: pool } = await q
+      if (!pool || pool.length === 0) {
+        warnings.push(`${row.skill}/${diff}: không có câu`)
+        continue
+      }
+
+      const shuffled = [...pool].sort(() => Math.random() - 0.5)
+      const picked   = shuffled.slice(0, Math.min(count, shuffled.length))
+      if (picked.length < count)
+        warnings.push(`${row.skill}/${diff}: chỉ lấy được ${picked.length}/${count}`)
+
+      for (const p of picked) {
+        toInsert.push({ assignment_id: assignmentId, question_id: p.id, position: pos++ })
+        excludeIds.push(p.id)
+      }
+    }
+  }
+
+  if (toInsert.length === 0) return { error: 'Không có câu hỏi nào phù hợp', count: 0 }
+
+  const { error } = await admin.from('assignment_questions').insert(toInsert)
+  if (error) return { error: error.message, count: 0 }
+
+  revalidatePath(`/admin/assignments/${assignmentId}`)
+  return { success: true, count: toInsert.length, warnings }
+}
+
 export async function updateAssignment(id: string, formData: FormData) {
   const admin = createAdminClient()
   const { error } = await admin.from('assignments').update({
