@@ -1,7 +1,7 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, CheckCircle, Clock, XCircle, Users } from 'lucide-react'
+import { ArrowLeft, CheckCircle, Clock, XCircle, Users, Eye } from 'lucide-react'
 
 export const dynamic = 'force-dynamic'
 
@@ -121,6 +121,7 @@ export default async function AssignmentResultsPage({ params }: { params: { id: 
                     <th className="px-6 py-3 text-left">Điểm</th>
                     <th className="px-6 py-3 text-left">Đúng / Tổng</th>
                     <th className="px-6 py-3 text-left">Thời gian nộp</th>
+                    <th className="px-6 py-3 text-left"></th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
@@ -160,6 +161,16 @@ export default async function AssignmentResultsPage({ params }: { params: { id: 
                           {sess?.finished_at
                             ? new Date(sess.finished_at).toLocaleString('vi-VN', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })
                             : '—'}
+                        </td>
+                        <td className="px-6 py-3">
+                          {sess && (
+                            <Link
+                              href={`/admin/sessions/${sess.id}`}
+                              className="inline-flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 font-medium"
+                            >
+                              <Eye size={13} /> Xem chi tiết
+                            </Link>
+                          )}
                         </td>
                       </tr>
                     )

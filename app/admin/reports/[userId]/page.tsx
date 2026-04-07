@@ -1,7 +1,7 @@
 import { getStudentReportData } from '../actions'
 import { notFound } from 'next/navigation'
 import ReportClient from './ReportClient'
-import { ArrowLeft } from 'lucide-react'
+import { ArrowLeft, Eye } from 'lucide-react'
 import Link from 'next/link'
 
 export const dynamic = 'force-dynamic'
@@ -80,7 +80,15 @@ export default async function StudentReportPage({ params }: { params: { userId: 
           <h2 className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-4">📈 Điểm số</h2>
           {diagnostic ? (
             <div className="mb-4 p-3 bg-blue-50 rounded-lg">
-              <p className="text-xs text-blue-600 font-semibold mb-2">Điểm đầu vào (Intake Test)</p>
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-xs text-blue-600 font-semibold">Điểm đầu vào (Intake Test)</p>
+                <Link
+                  href={`/admin/intake/results/${params.userId}`}
+                  className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 font-medium"
+                >
+                  <Eye size={12} /> Xem bài làm
+                </Link>
+              </div>
               <div className="grid grid-cols-3 gap-2 text-center">
                 <div>
                   <p className="text-xs text-gray-500">Math</p>
@@ -120,6 +128,9 @@ export default async function StudentReportPage({ params }: { params: { userId: 
                     />
                   </div>
                   <span className="text-xs font-semibold text-gray-700 w-10 text-right">{s.score ?? 0}%</span>
+                  <Link href={`/admin/sessions/${s.id}`} className="text-blue-500 hover:text-blue-700">
+                    <Eye size={13} />
+                  </Link>
                 </div>
               ))}
               {latestScore !== null && (

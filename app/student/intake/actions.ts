@@ -90,6 +90,17 @@ export async function submitIntakeTest(
   const { error: updateErr } = await admin.from('users').update({ tier }).eq('id', profile.id)
   if (updateErr) return { error: updateErr.message }
 
+  // Lưu từng câu trả lời intake
+  const intakeRows = (questions ?? []).map(q => ({
+    user_id:       profile.id,
+    question_id:   q.id,
+    chosen_answer: answers[q.id] ?? null,
+    is_correct:    answers[q.id] === q.correct_answer,
+  }))
+  if (intakeRows.length > 0) {
+    await admin.from('intake_answers').upsert(intakeRows, { onConflict: 'user_id,question_id' })
+  }
+
   revalidatePath('/student/intake')
   revalidatePath('/student/dashboard')
   return { success: true, tier, mathScore: mathSAT, rwScore: rwSAT }
