@@ -32,7 +32,8 @@ export default async function StudentDashboardPage() {
       .select('assignment_id')
       .in('class_id', classIds)
 
-    const assignmentIds = [...new Set(ca?.map(r => r.assignment_id) ?? [])]
+    // Dùng Array.from thay vì spread Set để tránh lỗi TypeScript downlevelIteration
+    const assignmentIds = Array.from(new Set((ca ?? []).map(r => r.assignment_id)))
     totalAssignments = assignmentIds.length
 
     if (assignmentIds.length > 0) {
