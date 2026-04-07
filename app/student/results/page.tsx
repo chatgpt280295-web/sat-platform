@@ -1,7 +1,8 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { formatDateTime } from '@/lib/utils'
-import { TrendingUp, CheckCircle, XCircle } from 'lucide-react'
+import { TrendingUp, CheckCircle, Eye } from 'lucide-react'
+import Link from 'next/link'
 
 export default async function StudentResultsPage() {
   const supabase = await createClient()
@@ -79,6 +80,7 @@ export default async function StudentResultsPage() {
                   <th>Điểm</th>
                   <th>Đúng / Tổng</th>
                   <th>Thời gian hoàn thành</th>
+                  <th></th>
                 </tr>
               </thead>
               <tbody>
@@ -106,6 +108,14 @@ export default async function StudentResultsPage() {
                       </td>
                       <td className="text-xs text-gray-400">
                         {s.finished_at ? formatDateTime(s.finished_at) : '—'}
+                      </td>
+                      <td>
+                        <Link
+                          href={`/student/sessions/${s.id}`}
+                          className="inline-flex items-center gap-1.5 text-xs text-blue-600 hover:text-blue-800 font-medium whitespace-nowrap"
+                        >
+                          <Eye size={13} /> Xem lại
+                        </Link>
                       </td>
                     </tr>
                   )
