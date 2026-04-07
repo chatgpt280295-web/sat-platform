@@ -5,7 +5,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import {
   BookOpen, LayoutDashboard, ClipboardList, BarChart2,
-  Settings, ClipboardCheck, CalendarCheck, LogOut,
+  Settings, ClipboardCheck, CalendarCheck, LogOut, User,
 } from 'lucide-react'
 
 const NAV = [
@@ -14,6 +14,7 @@ const NAV = [
   { href: '/student/assignments',  label: 'Bài tập',            icon: ClipboardList   },
   { href: '/student/attendance',   label: 'Điểm danh',          icon: CalendarCheck   },
   { href: '/student/results',      label: 'Kết quả',            icon: BarChart2       },
+  { href: '/student/profile',      label: 'Hồ sơ',              icon: User            },
   { href: '/student/settings',     label: 'Cài đặt',            icon: Settings        },
 ]
 
