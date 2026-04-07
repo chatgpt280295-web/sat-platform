@@ -10,9 +10,10 @@ export function IntakeToggle({ questionId, checked }: { questionId: string; chec
   const toggle = () => {
     const next = !on
     setOn(next)
-    startTransition(async () => {
-      const res = await toggleIntakeQuestion(questionId, next)
-      if (res.error) setOn(!next) // rollback
+    startTransition(() => {
+      toggleIntakeQuestion(questionId, next).then(res => {
+        if (res.error) setOn(!next) // rollback
+      })
     })
   }
 
@@ -47,7 +48,7 @@ export function SetAllButton({
   return (
     <button
       disabled={pending}
-      onClick={() => startTransition(() => setAllIntake(domain, value))}
+      onClick={() => { startTransition(() => { setAllIntake(domain, value) }) }}
       className={`text-xs px-3 py-1.5 rounded-lg font-medium transition-colors ${
         pending ? 'opacity-50 cursor-not-allowed' : ''
       } ${
