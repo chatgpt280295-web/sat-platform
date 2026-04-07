@@ -61,6 +61,9 @@ export default async function AdminAssignmentsPage() {
                     <Link href={`/admin/assignments/${a.id}`} className="btn-secondary text-sm">
                       Quản lý
                     </Link>
+                    <Link href={`/admin/assignments/${a.id}/results`} className="btn-secondary text-sm text-green-700 border-green-200 bg-green-50 hover:bg-green-100">
+                      Kết quả
+                    </Link>
                     <DeleteAssignmentBtn id={a.id} title={a.title}/>
                   </div>
                 </div>

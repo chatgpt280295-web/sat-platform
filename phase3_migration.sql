@@ -4,7 +4,6 @@
 -- =====================================================
 
 -- 1. error_logs
--- -------------------------------------------------------
 DROP TABLE IF EXISTS error_logs CASCADE;
 
 CREATE TABLE error_logs (
@@ -19,22 +18,18 @@ CREATE TABLE error_logs (
   created_at    timestamptz DEFAULT now()
 );
 
-CREATE INDEX error_logs_user_id_idx  ON error_logs(user_id);
-CREATE INDEX error_logs_session_idx  ON error_logs(session_id);
-CREATE INDEX error_logs_skill_idx    ON error_logs(skill);
+CREATE INDEX error_logs_user_id_idx ON error_logs(user_id);
+CREATE INDEX error_logs_skill_idx   ON error_logs(skill);
 
 ALTER TABLE error_logs ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY admin_all_error_logs ON error_logs
-  FOR ALL TO authenticated
-  USING (get_my_role() = 'admin');
+  FOR ALL TO authenticated USING (get_my_role() = 'admin');
 
 CREATE POLICY student_own_error_logs ON error_logs
-  FOR SELECT TO authenticated
-  USING (user_id = get_my_user_id());
+  FOR SELECT TO authenticated USING (user_id = get_my_user_id());
 
 -- 2. progress_reports
--- -------------------------------------------------------
 DROP TABLE IF EXISTS progress_reports CASCADE;
 
 CREATE TABLE progress_reports (
@@ -50,14 +45,32 @@ CREATE TABLE progress_reports (
 ALTER TABLE progress_reports ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY admin_all_progress_reports ON progress_reports
-  FOR ALL TO authenticated
-  USING (get_my_role() = 'admin');
+  FOR ALL TO authenticated USING (get_my_role() = 'admin');
 
 CREATE POLICY student_own_progress_reports ON progress_reports
-  FOR SELECT TO authenticated
-  USING (user_id = get_my_user_id());
+  FOR SELECT TO authenticated USING (user_id = get_my_user_id());
+
+-- =====================================================
+-- BUG 7 FIX: Backfill error_logs từ dữ liệu answers cũ
+-- Chạy sau khi tạo bảng để import lỗi sai từ bài đã làm
+-- =====================================================
+INSERT INTO error_logs (user_id, question_id, session_id, assignment_id, domain, skill, chosen_answer)
+SELECT
+  s.user_id,
+  a.question_id,
+  a.session_id,
+  s.assignment_id,
+  q.domain,
+  q.skill,
+  a.chosen_answer
+FROM answers a
+JOIN sessions  s ON s.id = a.session_id
+JOIN questions q ON q.id = a.question_id
+WHERE a.is_correct = false
+  AND a.chosen_answer IS NOT NULL
+ON CONFLICT DO NOTHING;
 
 -- Verify
-SELECT 'error_logs OK' AS status, COUNT(*) FROM error_logs
+SELECT 'error_logs'      AS tbl, COUNT(*) AS rows FROM error_logs
 UNION ALL
-SELECT 'progress_reports OK', COUNT(*) FROM progress_reports;
+SELECT 'progress_reports', COUNT(*) FROM progress_reports;
