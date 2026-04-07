@@ -1,100 +1,115 @@
 import { createClient } from '@/lib/supabase/server'
-import { formatDate } from '@/lib/utils'
-import { redirect } from 'next/navigation'
-import { ClipboardList, CheckCircle, Clock } from 'lucide-react'
 import Link from 'next/link'
+import { ClipboardList, CheckCircle, Clock } from 'lucide-react'
+
+export const dynamic = 'force-dynamic'
 
 export default async function StudentAssignmentsPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
+  if (!user) return null
 
   const { data: profile } = await supabase
     .from('users').select('id').eq('auth_id', user.id).single()
+  if (!profile) return null
 
-  const { data: assignments } = await supabase
-    .from('assignments')
-    .select('id, title, description, due_date, created_at, assignment_questions(count)')
-    .order('created_at', { ascending: false })
+  // Assignments from student's classes
+  const { data: classAssignmentRows } = await supabase
+    .from('class_members')
+    .select(`
+      classes(
+        name,
+        class_assignments(
+          assignments(id, title, description, due_date)
+        )
+      )
+    `)
+    .eq('user_id', profile.id)
 
-  // Get user's completed sessions
+  // Flatten assignments with class name
+  const assignmentMap = new Map<string, { assignment: any; className: string }>()
+  for (const cm of classAssignmentRows ?? []) {
+    const cls = cm.classes as any
+    for (const ca of cls?.class_assignments ?? []) {
+      const a = ca.assignments
+      if (a && !assignmentMap.has(a.id)) {
+        assignmentMap.set(a.id, { assignment: a, className: cls.name })
+      }
+    }
+  }
+  const assignments = Array.from(assignmentMap.values())
+
+  // Get sessions for this student
   const { data: sessions } = await supabase
     .from('sessions')
     .select('assignment_id, score, finished_at')
-    .eq('user_id', profile?.id ?? '')
+    .eq('user_id', profile.id)
     .not('finished_at', 'is', null)
 
-  const doneMap = new Map(sessions?.map(s => [s.assignment_id, s]) ?? [])
+  const sessionMap = new Map(sessions?.map(s => [s.assignment_id, s]) ?? [])
+  const now = new Date()
 
   return (
-    <div className="p-6 max-w-4xl mx-auto">
-      <div className="page-header">
-        <div>
-          <h1 className="page-title">Bài tập</h1>
-          <p className="page-subtitle">Danh sách bài tập được giao</p>
-        </div>
+    <div className="p-8">
+      <div className="mb-8">
+        <h1 className="text-2xl font-bold text-gray-900">Bài tập của tôi</h1>
+        <p className="text-sm text-gray-500 mt-1">{assignments.length} bài tập</p>
       </div>
 
-      {!assignments?.length ? (
-        <div className="card">
-          <div className="empty-state py-20">
-            <ClipboardList size={48} className="text-gray-200 mb-4"/>
-            <p className="text-gray-400 font-medium">Chưa có bài tập nào</p>
-            <p className="text-gray-400 text-sm mt-1">Giáo viên sẽ giao bài tập sớm!</p>
+      {assignments.length === 0 ? (
+        <div className="bg-white rounded-2xl border border-gray-200 py-20 text-center">
+          <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <ClipboardList className="w-7 h-7 text-gray-400" />
           </div>
+          <p className="text-gray-500 font-medium">Chưa có bài tập nào</p>
+          <p className="text-gray-400 text-sm mt-1">Bài tập sẽ xuất hiện khi giáo viên giao cho lớp của bạn</p>
         </div>
       ) : (
         <div className="space-y-3">
-          {assignments.map(a => {
-            const done     = doneMap.get(a.id)
-            const qCount   = (a.assignment_questions as any)?.[0]?.count ?? 0
-            const overdue  = a.due_date && !done && new Date(a.due_date) < new Date()
-            const pct      = done?.score ?? null
+          {assignments.map(({ assignment: a, className }) => {
+            const session  = sessionMap.get(a.id)
+            const done     = !!session
+            const overdue  = !done && a.due_date && new Date(a.due_date) < now
 
             return (
-              <div key={a.id} className={`card transition-shadow hover:shadow-md ${done ? 'opacity-90' : ''}`}>
-                <div className="card-body flex items-center gap-5">
-                  <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${
-                    done ? 'bg-emerald-100' : 'bg-blue-50'
+              <div key={a.id} className="bg-white rounded-2xl border border-gray-200 p-5 flex items-center justify-between gap-4">
+                <div className="flex items-center gap-4 min-w-0">
+                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
+                    done ? 'bg-green-100' : overdue ? 'bg-red-100' : 'bg-blue-100'
                   }`}>
                     {done
-                      ? <CheckCircle size={22} className="text-emerald-600"/>
-                      : <ClipboardList size={22} className="text-blue-600"/>}
+                      ? <CheckCircle className="w-5 h-5 text-green-600" />
+                      : <Clock className={`w-5 h-5 ${overdue ? 'text-red-500' : 'text-blue-600'}`} />
+                    }
                   </div>
-
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap mb-1">
-                      <h3 className="font-semibold text-gray-900">{a.title}</h3>
-                      <span className="badge badge-blue">{qCount} câu</span>
-                      {done && pct !== null && (
-                        <span className={`badge ${pct >= 70 ? 'badge-green' : pct >= 50 ? 'badge-yellow' : 'badge-red'}`}>
-                          {pct}%
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <p className="font-semibold text-gray-900 text-sm">{a.title}</p>
+                      <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">{className}</span>
+                      {done && (
+                        <span className="text-xs bg-green-100 text-green-700 font-medium px-2 py-0.5 rounded-full">
+                          {Math.round(session.score ?? 0)}%
                         </span>
                       )}
-                      {overdue && <span className="badge badge-red">Quá hạn</span>}
+                      {overdue && !done && (
+                        <span className="text-xs bg-red-100 text-red-600 font-medium px-2 py-0.5 rounded-full">Quá hạn</span>
+                      )}
                     </div>
-                    {a.description && <p className="text-sm text-gray-500 truncate">{a.description}</p>}
                     {a.due_date && (
-                      <p className={`text-xs mt-1 flex items-center gap-1 ${overdue ? 'text-red-500' : 'text-gray-400'}`}>
-                        <Clock size={11}/> Hạn: {formatDate(a.due_date)}
+                      <p className="text-xs text-gray-400 mt-0.5">
+                        Hạn nộp: {new Date(a.due_date).toLocaleDateString('vi-VN')}
                       </p>
                     )}
                   </div>
-
-                  <div className="shrink-0">
-                    {done ? (
-                      <Link href={`/student/results`} className="btn-secondary text-sm">
-                        Xem kết quả
-                      </Link>
-                    ) : qCount > 0 ? (
-                      <Link href={`/student/assignments/${a.id}`} className="btn-primary text-sm">
-                        Làm bài →
-                      </Link>
-                    ) : (
-                      <span className="text-xs text-gray-400">Chưa có câu hỏi</span>
-                    )}
-                  </div>
                 </div>
+                <Link href={`/student/assignments/${a.id}`}
+                  className={`shrink-0 px-4 py-2 rounded-xl text-sm font-medium transition-colors ${
+                    done
+                      ? 'bg-gray-100 hover:bg-gray-200 text-gray-600'
+                      : 'bg-blue-600 hover:bg-blue-700 text-white'
+                  }`}>
+                  {done ? 'Xem lại' : 'Làm bài'}
+                </Link>
               </div>
             )
           })}

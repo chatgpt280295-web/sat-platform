@@ -3,13 +3,14 @@
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { BookOpen, Users, LayoutDashboard, HelpCircle, ClipboardList, LogOut } from 'lucide-react'
+import { BookOpen, LayoutDashboard, Users, HelpCircle, ClipboardList, GraduationCap, LogOut } from 'lucide-react'
 
 const NAV = [
   { href: '/admin/dashboard',   label: 'Dashboard',  icon: LayoutDashboard },
-  { href: '/admin/users',       label: 'Học viên',   icon: Users },
-  { href: '/admin/questions',   label: 'Câu hỏi',    icon: HelpCircle },
-  { href: '/admin/assignments', label: 'Bài tập',    icon: ClipboardList },
+  { href: '/admin/classes',     label: 'Lớp học',    icon: GraduationCap   },
+  { href: '/admin/users',       label: 'Học viên',   icon: Users           },
+  { href: '/admin/questions',   label: 'Câu hỏi',    icon: HelpCircle      },
+  { href: '/admin/assignments', label: 'Bài tập',    icon: ClipboardList   },
 ]
 
 export default function AdminSidebar() {
@@ -31,7 +32,7 @@ export default function AdminSidebar() {
           </div>
           <div>
             <div className="font-bold text-gray-900 text-sm leading-none">SAT Platform</div>
-            <div className="text-xs text-gray-400 mt-0.5">Admin Panel</div>
+            <div className="text-xs text-gray-400 mt-0.5">Quản trị viên</div>
           </div>
         </div>
       </div>
