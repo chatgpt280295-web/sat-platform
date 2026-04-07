@@ -1,6 +1,7 @@
 'use server'
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 
 export async function saveSurvey(formData: FormData) {
   const supabase = await createClient()
@@ -72,17 +73,24 @@ export async function submitIntakeTest(
   else if (totalSAT >= 1100) tier = 3
   else if (totalSAT >= 900) tier = 2
 
-  // Lưu kết quả
-  await supabase.from('diagnostic_results').insert({
-    user_id:    profile.id,
-    tier,
-    math_score: mathSAT,
-    rw_score:   rwSAT,
-  })
+  const admin = createAdminClient()
 
-  // Cập nhật tier vào users
-  await supabase.from('users').update({ tier }).eq('id', profile.id)
+  // Lưu kết quả — dùng admin client để bypass RLS
+  const { error: insertErr } = await admin.from('diagnostic_results').upsert({
+    user_id:     profile.id,
+    tier,
+    math_score:  mathSAT,
+    rw_score:    rwSAT,
+    total_score: totalSAT,
+  }, { onConflict: 'user_id' })
+
+  if (insertErr) return { error: insertErr.message }
+
+  // Cập nhật tier vào users — dùng admin client để bypass RLS
+  const { error: updateErr } = await admin.from('users').update({ tier }).eq('id', profile.id)
+  if (updateErr) return { error: updateErr.message }
 
   revalidatePath('/student/intake')
+  revalidatePath('/student/dashboard')
   return { success: true, tier, mathScore: mathSAT, rwScore: rwSAT }
 }
