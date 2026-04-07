@@ -14,17 +14,19 @@ export default async function IntakeTestPage() {
   if (!profile) redirect('/login')
   if (profile.tier) redirect('/student/intake/result')
 
-  // Lấy 15 câu Math + 15 câu RW ngẫu nhiên
+  // Lấy câu hỏi đầu vào được admin chọn (is_intake = true)
   const { data: mathQs } = await supabase
     .from('questions')
     .select('id, content, option_a, option_b, option_c, option_d, domain, skill, difficulty')
     .eq('domain', 'Math')
+    .eq('is_intake', true)
     .limit(50)
 
   const { data: rwQs } = await supabase
     .from('questions')
     .select('id, content, option_a, option_b, option_c, option_d, domain, skill, difficulty')
     .eq('domain', 'Reading & Writing')
+    .eq('is_intake', true)
     .limit(50)
 
   // Shuffle và lấy 15 mỗi loại
@@ -40,7 +42,7 @@ export default async function IntakeTestPage() {
   if (questions.length === 0) {
     return (
       <div className="p-8 text-center">
-        <p className="text-gray-500">Chưa có câu hỏi trong ngân hàng. Giáo viên cần thêm câu hỏi trước.</p>
+        <p className="text-gray-500">Bài kiểm tra đầu vào chưa được cấu hình. Vui lòng liên hệ giáo viên.</p>
       </div>
     )
   }
