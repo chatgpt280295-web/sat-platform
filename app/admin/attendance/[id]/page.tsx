@@ -1,8 +1,9 @@
 import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { ChevronLeft, CheckCircle, Clock, XCircle, Copy } from 'lucide-react'
+import { ChevronLeft, CheckCircle, Clock, XCircle } from 'lucide-react'
 import AttendanceActions from './AttendanceActions'
+import CopyLinkButton from './CopyLinkButton'
 
 export const dynamic = 'force-dynamic'
 
@@ -115,14 +116,3 @@ export default async function SessionDetailPage({ params }: { params: { id: stri
   )
 }
 
-function CopyLinkButton({ url }: { url: string }) {
-  return (
-    <button
-      onClick={() => {
-        if (typeof navigator !== 'undefined') navigator.clipboard.writeText(url)
-      }}
-      className="shrink-0 flex items-center gap-1.5 px-3 py-2 bg-blue-100 hover:bg-blue-200 text-blue-700 text-xs font-medium rounded-lg transition-colors">
-      <Copy size={13} /> Copy
-    </button>
-  )
-}
