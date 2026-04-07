@@ -4,7 +4,8 @@ import { useState, useEffect, useTransition } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { addQuestionToAssignment, removeQuestionFromAssignment, updateAssignment } from '../actions'
-import { ArrowLeft, Plus, Trash2, Search, Save } from 'lucide-react'
+import { ArrowLeft, Plus, Trash2, Search, Save, Shuffle } from 'lucide-react'
+import RandomQuestionsTab from './RandomQuestionsTab'
 import Link from 'next/link'
 import { formatDate } from '@/lib/utils'
 import { MATH_SKILLS, RW_SKILLS } from '@/types'
@@ -20,7 +21,7 @@ export default function AssignmentDetailPage() {
   const [search, setSearch]           = useState('')
   const [domain, setDomain]           = useState('')
   const [difficulty, setDifficulty]   = useState('')
-  const [tab, setTab]                 = useState<'questions'|'add'>('questions')
+  const [tab, setTab]                 = useState<'questions'|'add'|'random'>('questions')
   const [editing, setEditing]         = useState(false)
   const [form, setForm]               = useState({ title: '', description: '', due_date: '' })
   const [error, setError]             = useState('')
@@ -143,12 +144,16 @@ export default function AssignmentDetailPage() {
 
       {/* Tabs */}
       <div className="flex gap-1 mb-5 bg-gray-100 rounded-xl p-1 w-fit">
-        {(['questions','add'] as const).map(t => (
-          <button key={t} onClick={() => setTab(t)}
+        {([
+          { key: 'questions', label: `Câu hỏi trong bài (${aqList.length})` },
+          { key: 'add',       label: '+ Thêm thủ công' },
+          { key: 'random',    label: '🎲 Tạo ngẫu nhiên' },
+        ] as const).map(t => (
+          <button key={t.key} onClick={() => setTab(t.key)}
             className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-              tab === t ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+              tab === t.key ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
             }`}>
-            {t === 'questions' ? `Câu hỏi trong bài (${aqList.length})` : '+ Thêm từ ngân hàng'}
+            {t.label}
           </button>
         ))}
       </div>
@@ -194,6 +199,26 @@ export default function AssignmentDetailPage() {
               </table>
             </div>
           )}
+        </div>
+      )}
+
+      {/* Tab: Random questions */}
+      {tab === 'random' && (
+        <div className="card">
+          <div className="card-body">
+            <div className="flex items-center gap-2 mb-5">
+              <Shuffle size={18} className="text-blue-600" />
+              <div>
+                <h3 className="font-semibold text-gray-900 text-sm">Tạo bài tập ngẫu nhiên</h3>
+                <p className="text-xs text-gray-400 mt-0.5">Hệ thống sẽ chọn ngẫu nhiên câu hỏi từ ngân hàng theo cấu hình bên dưới</p>
+              </div>
+            </div>
+            <RandomQuestionsTab
+              assignmentId={id}
+              existingIds={aqList.map(aq => aq.questions?.id).filter(Boolean)}
+              onDone={() => { loadAQ(); setTab('questions') }}
+            />
+          </div>
         </div>
       )}
 
