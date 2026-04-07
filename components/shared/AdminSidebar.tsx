@@ -3,14 +3,15 @@
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { BookOpen, LayoutDashboard, Users, HelpCircle, ClipboardList, GraduationCap, LogOut } from 'lucide-react'
+import { BookOpen, LayoutDashboard, Users, HelpCircle, ClipboardList, GraduationCap, CalendarCheck, LogOut } from 'lucide-react'
 
 const NAV = [
-  { href: '/admin/dashboard',   label: 'Dashboard',  icon: LayoutDashboard },
-  { href: '/admin/classes',     label: 'Lớp học',    icon: GraduationCap   },
-  { href: '/admin/users',       label: 'Học viên',   icon: Users           },
-  { href: '/admin/questions',   label: 'Câu hỏi',    icon: HelpCircle      },
-  { href: '/admin/assignments', label: 'Bài tập',    icon: ClipboardList   },
+  { href: '/admin/dashboard',   label: 'Dashboard',   icon: LayoutDashboard },
+  { href: '/admin/classes',     label: 'Lớp học',     icon: GraduationCap   },
+  { href: '/admin/attendance',  label: 'Điểm danh',   icon: CalendarCheck   },
+  { href: '/admin/users',       label: 'Học viên',    icon: Users           },
+  { href: '/admin/questions',   label: 'Câu hỏi',     icon: HelpCircle      },
+  { href: '/admin/assignments', label: 'Bài tập',     icon: ClipboardList   },
 ]
 
 export default function AdminSidebar() {

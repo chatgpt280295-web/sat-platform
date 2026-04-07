@@ -3,13 +3,14 @@
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { BookOpen, LayoutDashboard, ClipboardList, BarChart2, Settings, LogOut } from 'lucide-react'
+import { BookOpen, LayoutDashboard, ClipboardList, BarChart2, Settings, ClipboardCheck, LogOut } from 'lucide-react'
 
 const NAV = [
-  { href: '/student/dashboard',   label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/student/assignments', label: 'Bài tập',   icon: ClipboardList },
-  { href: '/student/results',     label: 'Kết quả',   icon: BarChart2 },
-  { href: '/student/settings',    label: 'Cài đặt',   icon: Settings },
+  { href: '/student/dashboard',   label: 'Dashboard',    icon: LayoutDashboard },
+  { href: '/student/intake',      label: 'Kiểm tra đầu vào', icon: ClipboardCheck },
+  { href: '/student/assignments', label: 'Bài tập',      icon: ClipboardList   },
+  { href: '/student/results',     label: 'Kết quả',      icon: BarChart2       },
+  { href: '/student/settings',    label: 'Cài đặt',      icon: Settings        },
 ]
 
 export default function StudentSidebar() {
