@@ -13,7 +13,6 @@ export async function startOrGetSession(assignmentId: string) {
     .from('users').select('id').eq('auth_id', user.id).single()
   if (!profile) return { error: 'Không tìm thấy user' }
 
-  // Check existing unfinished session
   const { data: existing } = await supabase
     .from('sessions')
     .select('id')
@@ -24,7 +23,6 @@ export async function startOrGetSession(assignmentId: string) {
 
   if (existing) return { success: true, sessionId: existing.id }
 
-  // Count questions
   const { count } = await supabase
     .from('assignment_questions').select('*', { count: 'exact', head: true })
     .eq('assignment_id', assignmentId)
@@ -42,27 +40,31 @@ export async function startOrGetSession(assignmentId: string) {
 
 export async function submitSession(
   sessionId: string,
-  answers: Record<string, string>  // questionId -> chosen answer
+  answers: Record<string, string>
 ) {
   const admin = createAdminClient()
 
-  // Get questions with correct answers
+  // Fetch session with user_id for error logging
   const { data: session } = await admin
-    .from('sessions').select('assignment_id').eq('id', sessionId).single()
+    .from('sessions')
+    .select('assignment_id, user_id')
+    .eq('id', sessionId)
+    .single()
   if (!session) return { error: 'Session không tồn tại' }
 
+  // Fetch questions with correct answer + domain/skill for error analysis
   const { data: aqList } = await admin
     .from('assignment_questions')
-    .select('question_id, questions(correct_answer)')
+    .select('question_id, questions(correct_answer, domain, skill)')
     .eq('assignment_id', session.assignment_id)
 
   if (!aqList) return { error: 'Không tìm thấy câu hỏi' }
 
-  // Calculate score
   let correctCount = 0
-  const answerRows = aqList.map(aq => {
+  const answerRows = aqList.map((aq: any) => {
     const chosen     = answers[aq.question_id] ?? null
-    const isCorrect  = chosen === (aq.questions as any)?.correct_answer
+    const correctAns = aq.questions?.correct_answer
+    const isCorrect  = chosen !== null && chosen === correctAns
     if (isCorrect) correctCount++
     return {
       session_id:    sessionId,
@@ -73,16 +75,39 @@ export async function submitSession(
   })
 
   await admin.from('answers').insert(answerRows)
+
   const score = aqList.length > 0 ? Math.round((correctCount / aqList.length) * 100) : 0
 
   const { error } = await admin.from('sessions').update({
-    finished_at:   new Date().toISOString(),
-    correct_count: correctCount,
+    finished_at:     new Date().toISOString(),
+    correct_count:   correctCount,
     total_questions: aqList.length,
     score,
   }).eq('id', sessionId)
 
   if (error) return { error: error.message }
+
+  // M05: Auto-log errors for wrong answers
+  const errorRows = answerRows
+    .filter((row: any) => !row.is_correct && row.chosen_answer !== null)
+    .map((row: any) => {
+      const aq = aqList.find((q: any) => q.question_id === row.question_id) as any
+      return {
+        user_id:       session.user_id,
+        question_id:   row.question_id,
+        session_id:    sessionId,
+        assignment_id: session.assignment_id,
+        domain:        aq?.questions?.domain ?? null,
+        skill:         aq?.questions?.skill ?? null,
+        chosen_answer: row.chosen_answer,
+      }
+    })
+
+  if (errorRows.length > 0) {
+    await admin.from('error_logs').insert(errorRows)
+  }
+
   revalidatePath('/student/results')
+  revalidatePath('/student/dashboard')
   return { success: true, score, correctCount, total: aqList.length }
 }
