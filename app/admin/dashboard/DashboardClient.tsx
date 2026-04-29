@@ -1,78 +1,86 @@
 'use client'
 
+// ── Types & Imports ────────────────────────────────────────────────────────────
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { Users, HelpCircle, ClipboardList, GraduationCap, TrendingUp } from 'lucide-react'
+import { Users, BookOpen, ClipboardList, ShoppingCart, TrendingUp } from 'lucide-react'
+
+interface Stats {
+  totalStudents:    number
+  totalEnrollments: number
+  totalAssignments: number
+  pendingOrders:    number
+}
 
 interface Props {
-  stats: { totalStudents: number; totalQuestions: number; totalAssignments: number }
-  classes: any[]
+  stats:          Stats
+  courses:        any[]
   recentSessions: any[]
 }
 
-export default function DashboardClient({ stats, classes, recentSessions: initSessions }: Props) {
-  const [selectedClass, setSelectedClass]   = useState<string>('all')
-  const [classStats, setClassStats]         = useState<any>(null)
-  const [loadingClass, setLoadingClass]     = useState(false)
+// ── Render ─────────────────────────────────────────────────────────────────────
+export default function DashboardClient({ stats, courses, recentSessions: initSessions }: Props) {
+  const [selectedCourse, setSelectedCourse] = useState<string>('all')
+  const [courseStats, setCourseStats]       = useState<any>(null)
+  const [loading, setLoading]               = useState(false)
   const [sessions, setSessions]             = useState(initSessions)
 
-  async function handleClassFilter(classId: string) {
-    setSelectedClass(classId)
-    if (classId === 'all') {
-      setClassStats(null)
+  async function handleCourseFilter(courseId: string) {
+    setSelectedCourse(courseId)
+    if (courseId === 'all') {
+      setCourseStats(null)
       setSessions(initSessions)
       return
     }
-    setLoadingClass(true)
+
+    setLoading(true)
     const supabase = createClient()
 
     const [
-      { count: memberCount },
-      { data: classSessionData },
+      { count: enrollCount },
+      { data: courseSessions },
     ] = await Promise.all([
-      supabase.from('class_members').select('*', { count: 'exact', head: true }).eq('class_id', classId),
+      supabase.from('enrollments').select('*', { count: 'exact', head: true }).eq('course_id', courseId),
       supabase.from('sessions')
-        .select('id, score, finished_at, users(full_name), assignments(title)')
+        .select('id, score, finished_at, users(full_name), assignments!inner(title, course_id)')
         .not('finished_at', 'is', null)
+        .eq('assignments.course_id', courseId)
         .order('finished_at', { ascending: false })
-        .limit(10),
+        .limit(20),
     ])
 
-    // Filter sessions by class members
-    const { data: memberIds } = await supabase
-      .from('class_members').select('user_id').eq('class_id', classId)
-    const memberIdSet = new Set(memberIds?.map(m => m.user_id))
-    const filtered = (classSessionData ?? []).filter((s: any) => memberIdSet.has(s.users?.id ?? ''))
-
-    const scores = filtered.filter((s: any) => s.score !== null).map((s: any) => s.score)
-    setClassStats({
-      memberCount: memberCount ?? 0,
-      sessionCount: filtered.length,
-      avgScore: scores.length ? Math.round(scores.reduce((a: number, b: number) => a + b, 0) / scores.length) : null,
+    const scored = (courseSessions ?? []).filter((s: any) => s.score !== null)
+    setCourseStats({
+      enrollCount: enrollCount ?? 0,
+      sessionCount: courseSessions?.length ?? 0,
+      avgScore: scored.length
+        ? Math.round(scored.reduce((a: number, s: any) => a + s.score, 0) / scored.length)
+        : null,
     })
-    setSessions(filtered)
-    setLoadingClass(false)
+    setSessions(courseSessions ?? [])
+    setLoading(false)
   }
 
-  const selectedClassName = classes.find(c => c.id === selectedClass)?.name ?? 'Tất cả'
+  const selectedCourseName = courses.find(c => c.id === selectedCourse)?.name ?? 'Tất cả'
 
   return (
-    <div className="p-8">
-      <div className="flex items-center justify-between mb-8">
+    <div className="p-6">
+      {/* Header */}
+      <div className="page-header">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
-          <p className="text-sm text-gray-500 mt-1">Tổng quan hệ thống</p>
+          <h1 className="page-title">Dashboard</h1>
+          <p className="page-subtitle">Tổng quan hệ thống</p>
         </div>
 
-        {/* Class filter */}
+        {/* Course filter */}
         <div className="flex items-center gap-2">
-          <GraduationCap size={16} className="text-gray-400" />
+          <BookOpen size={16} className="text-gray-400" />
           <select
-            value={selectedClass}
-            onChange={e => handleClassFilter(e.target.value)}
-            className="border border-gray-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-white min-w-[160px]">
-            <option value="all">Tất cả lớp</option>
-            {classes.map((c: any) => (
+            value={selectedCourse}
+            onChange={e => handleCourseFilter(e.target.value)}
+            className="input min-w-[180px]">
+            <option value="all">Tất cả khóa học</option>
+            {courses.map((c: any) => (
               <option key={c.id} value={c.id}>{c.name}</option>
             ))}
           </select>
@@ -80,62 +88,64 @@ export default function DashboardClient({ stats, classes, recentSessions: initSe
       </div>
 
       {/* Stats cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        {selectedClass !== 'all' && classStats ? (
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        {selectedCourse !== 'all' && courseStats ? (
           <>
-            <StatCard icon={Users} label="Học viên lớp" value={classStats.memberCount} color="blue" />
-            <StatCard icon={ClipboardList} label="Lượt làm bài" value={classStats.sessionCount} color="purple" />
-            <StatCard icon={TrendingUp} label="Điểm TB" value={classStats.avgScore !== null ? classStats.avgScore + '%' : '—'} color="green" />
-            <StatCard icon={GraduationCap} label="Lớp đang xem" value={selectedClassName} color="orange" small />
+            <StatCard icon={Users}        label="Học viên ghi danh" value={courseStats.enrollCount}  color="blue"   />
+            <StatCard icon={ClipboardList} label="Lượt làm bài"     value={courseStats.sessionCount} color="purple" />
+            <StatCard icon={TrendingUp}   label="Điểm TB"           value={courseStats.avgScore !== null ? courseStats.avgScore + '%' : '—'} color="green" />
+            <StatCard icon={BookOpen}     label="Khóa đang xem"     value={selectedCourseName}       color="orange" small />
           </>
         ) : (
           <>
-            <StatCard icon={Users}        label="Học viên"    value={stats.totalStudents}    color="blue"   />
-            <StatCard icon={HelpCircle}   label="Câu hỏi"    value={stats.totalQuestions}   color="purple" />
-            <StatCard icon={ClipboardList} label="Bài tập"   value={stats.totalAssignments} color="green"  />
-            <StatCard icon={GraduationCap} label="Lớp học"   value={classes.length}         color="orange" />
+            <StatCard icon={Users}         label="Học viên"      value={stats.totalStudents}    color="blue"   />
+            <StatCard icon={BookOpen}      label="Ghi danh"      value={stats.totalEnrollments} color="purple" />
+            <StatCard icon={ClipboardList} label="Bài tập"       value={stats.totalAssignments} color="green"  />
+            <StatCard icon={ShoppingCart}  label="Đơn chờ duyệt" value={stats.pendingOrders}    color="orange" />
           </>
         )}
       </div>
 
       {/* Recent sessions */}
-      <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
-        <div className="px-6 py-4 border-b border-gray-100">
+      <div className="card">
+        <div className="card-header">
           <h2 className="font-semibold text-gray-900 text-sm">
-            Kết quả gần đây {selectedClass !== 'all' ? `— ${selectedClassName}` : ''}
+            Kết quả gần đây {selectedCourse !== 'all' ? `— ${selectedCourseName}` : ''}
           </h2>
         </div>
-        {loadingClass ? (
+        {loading ? (
           <div className="py-12 text-center text-gray-400 text-sm">Đang tải...</div>
         ) : sessions.length === 0 ? (
           <div className="py-12 text-center text-gray-400 text-sm">Chưa có kết quả nào</div>
         ) : (
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-gray-100 bg-gray-50/50">
-                <th className="text-left text-xs font-semibold text-gray-500 uppercase px-6 py-3">Học viên</th>
-                <th className="text-left text-xs font-semibold text-gray-500 uppercase px-6 py-3">Bài tập</th>
-                <th className="text-left text-xs font-semibold text-gray-500 uppercase px-6 py-3">Điểm</th>
-                <th className="text-left text-xs font-semibold text-gray-500 uppercase px-6 py-3">Thời gian</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {sessions.map((s: any) => (
-                <tr key={s.id} className="hover:bg-gray-50/50">
-                  <td className="px-6 py-3 text-sm font-medium text-gray-900">{s.users?.full_name ?? '—'}</td>
-                  <td className="px-6 py-3 text-sm text-gray-600">{s.assignments?.title ?? '—'}</td>
-                  <td className="px-6 py-3">
-                    <span className={`text-sm font-semibold ${
-                      (s.score ?? 0) >= 70 ? 'text-green-600' : (s.score ?? 0) >= 50 ? 'text-yellow-600' : 'text-red-500'
-                    }`}>{s.score !== null ? Math.round(s.score) + '%' : '—'}</span>
-                  </td>
-                  <td className="px-6 py-3 text-sm text-gray-400">
-                    {s.finished_at ? new Date(s.finished_at).toLocaleString('vi-VN') : '—'}
-                  </td>
+          <div className="table-wrap">
+            <table className="table">
+              <thead>
+                <tr>
+                  <th>Học viên</th>
+                  <th>Bài tập</th>
+                  <th>Điểm</th>
+                  <th>Thời gian</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {sessions.map((s: any) => (
+                  <tr key={s.id}>
+                    <td className="font-medium text-gray-900">{s.users?.full_name ?? '—'}</td>
+                    <td className="text-gray-600">{s.assignments?.title ?? '—'}</td>
+                    <td>
+                      <span className={`font-semibold ${
+                        (s.score ?? 0) >= 70 ? 'text-green-600' : (s.score ?? 0) >= 50 ? 'text-yellow-600' : 'text-red-500'
+                      }`}>{s.score !== null ? Math.round(s.score) + '%' : '—'}</span>
+                    </td>
+                    <td className="text-gray-400">
+                      {s.finished_at ? new Date(s.finished_at).toLocaleString('vi-VN') : '—'}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
     </div>
@@ -146,8 +156,10 @@ function StatCard({ icon: Icon, label, value, color, small }: {
   icon: any; label: string; value: any; color: string; small?: boolean
 }) {
   const colors: Record<string, string> = {
-    blue: 'bg-blue-50 text-blue-600', purple: 'bg-purple-50 text-purple-600',
-    green: 'bg-green-50 text-green-600', orange: 'bg-orange-50 text-orange-600',
+    blue:   'bg-blue-50 text-blue-600',
+    purple: 'bg-purple-50 text-purple-600',
+    green:  'bg-green-50 text-green-600',
+    orange: 'bg-orange-50 text-orange-600',
   }
   return (
     <div className="bg-white rounded-2xl border border-gray-200 p-5">

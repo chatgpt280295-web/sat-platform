@@ -18,7 +18,12 @@ interface Props {
   survey: Survey | null
 }
 
-const ENGLISH_LEVELS = ['Beginner', 'Elementary', 'Intermediate', 'Upper-Intermediate', 'Advanced']
+const ENGLISH_LEVELS = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2']
+const ENGLISH_LABELS: Record<string, string> = {
+  A1: 'A1 — Beginner', A2: 'A2 — Elementary',
+  B1: 'B1 — Intermediate', B2: 'B2 — Upper-Intermediate',
+  C1: 'C1 — Advanced', C2: 'C2 — Proficient',
+}
 const GRADES         = ['Lớp 9', 'Lớp 10', 'Lớp 11', 'Lớp 12', 'Đã tốt nghiệp', 'Khác']
 
 export default function ProfileClient({ fullName, survey }: Props) {
@@ -45,12 +50,13 @@ export default function ProfileClient({ fullName, survey }: Props) {
     setSuccess(false)
     const fd = new FormData()
     Object.entries(form).forEach(([k, v]) => { if (v) fd.set(k, v) })
-    start(async () => {
-      const res = await updateProfile(fd)
-      if (res.error) { setError(res.error); return }
-      setSuccess(true)
-      setEditing(false)
-      setTimeout(() => setSuccess(false), 3000)
+    start(() => {
+      updateProfile(fd).then((res) => {
+        if (res.error) { setError(res.error); return }
+        setSuccess(true)
+        setEditing(false)
+        setTimeout(() => setSuccess(false), 3000)
+      })
     })
   }
 
@@ -86,7 +92,7 @@ export default function ProfileClient({ fullName, survey }: Props) {
                 Họ và tên
               </label>
               {editing ? (
-                <input className="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                <input className="input"
                   value={form.full_name} onChange={e => set('full_name', e.target.value)} />
               ) : (
                 <p className="text-sm font-medium text-gray-900">{form.full_name || '—'}</p>
@@ -97,7 +103,7 @@ export default function ProfileClient({ fullName, survey }: Props) {
                 Trường học
               </label>
               {editing ? (
-                <input className="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                <input className="input"
                   placeholder="VD: THPT Nguyễn Du"
                   value={form.school} onChange={e => set('school', e.target.value)} />
               ) : (
@@ -109,7 +115,7 @@ export default function ProfileClient({ fullName, survey }: Props) {
                 Năm học / Lớp
               </label>
               {editing ? (
-                <select className="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                <select className="input"
                   value={form.grade} onChange={e => set('grade', e.target.value)}>
                   <option value="">Chọn năm học</option>
                   {GRADES.map(g => <option key={g} value={g}>{g}</option>)}
@@ -123,13 +129,13 @@ export default function ProfileClient({ fullName, survey }: Props) {
                 Trình độ tiếng Anh
               </label>
               {editing ? (
-                <select className="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                <select className="input"
                   value={form.english_level} onChange={e => set('english_level', e.target.value)}>
                   <option value="">Chọn trình độ</option>
-                  {ENGLISH_LEVELS.map(l => <option key={l} value={l}>{l}</option>)}
+                  {ENGLISH_LEVELS.map(l => <option key={l} value={l}>{ENGLISH_LABELS[l]}</option>)}
                 </select>
               ) : (
-                <p className="text-sm text-gray-700">{form.english_level || <span className="text-gray-400">Chưa cập nhật</span>}</p>
+                <p className="text-sm text-gray-700">{form.english_level ? (ENGLISH_LABELS[form.english_level] ?? form.english_level) : <span className="text-gray-400">Chưa cập nhật</span>}</p>
               )}
             </div>
           </div>
@@ -148,7 +154,7 @@ export default function ProfileClient({ fullName, survey }: Props) {
               {editing ? (
                 <div className="relative">
                   <input type="number" min={400} max={1600} step={10}
-                    className="w-full border border-gray-300 rounded-xl px-3 py-2 pr-16 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                    className="input pr-16"
                     placeholder="VD: 1400"
                     value={form.sat_target} onChange={e => set('sat_target', e.target.value)} />
                   <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">/ 1600</span>
@@ -168,7 +174,7 @@ export default function ProfileClient({ fullName, survey }: Props) {
               {editing ? (
                 <div className="relative">
                   <input type="number" min={1} max={40}
-                    className="w-full border border-gray-300 rounded-xl px-3 py-2 pr-16 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                    className="input pr-16"
                     placeholder="VD: 10"
                     value={form.hours_per_week} onChange={e => set('hours_per_week', e.target.value)} />
                   <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">giờ</span>
@@ -187,7 +193,7 @@ export default function ProfileClient({ fullName, survey }: Props) {
               </label>
               {editing ? (
                 <textarea rows={3}
-                  className="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none resize-none"
+                  className="input resize-none"
                   placeholder="VD: Tôi giỏi phần Grammar nhưng cần cải thiện Reading..."
                   value={form.strengths} onChange={e => set('strengths', e.target.value)} />
               ) : (

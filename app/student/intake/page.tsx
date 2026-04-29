@@ -20,10 +20,6 @@ export default async function IntakePage() {
     .from('diagnostic_results').select('id').eq('user_id', profile.id).limit(1).maybeSingle()
   if (diag) redirect('/student/intake/result')
 
-  // Kiểm tra survey
-  const { data: survey } = await supabase
-    .from('intake_surveys').select('id').eq('user_id', profile.id).maybeSingle()
-  if (!survey) redirect('/student/intake/survey')
-
-  redirect('/student/intake/test')
+  // Use start page logic for smart routing (math → english → result)
+  redirect('/student/intake/start')
 }

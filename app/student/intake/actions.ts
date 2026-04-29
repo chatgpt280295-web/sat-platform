@@ -3,26 +3,8 @@ import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 
-export async function saveSurvey(formData: FormData) {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return { error: 'Chưa đăng nhập' }
-
-  const { data: profile } = await supabase
-    .from('users').select('id').eq('auth_id', user.id).single()
-  if (!profile) return { error: 'Không tìm thấy người dùng' }
-
-  const { error } = await supabase.from('intake_surveys').upsert({
-    user_id:       profile.id,
-    school:        formData.get('school')        as string,
-    grade:         formData.get('grade')         as string,
-    english_level: formData.get('english_level') as string,
-    sat_target:    parseInt(formData.get('sat_target') as string || '0'),
-    hours_per_week: parseInt(formData.get('hours_per_week') as string || '0'),
-    strengths:     formData.get('strengths')     as string,
-  }, { onConflict: 'user_id' })
-
-  if (error) return { error: error.message }
+export async function saveSurvey(_formData: FormData) {
+  // intake_surveys table was removed in migration 006 — this is a no-op stub.
   revalidatePath('/student/intake')
   return { success: true }
 }

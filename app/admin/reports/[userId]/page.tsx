@@ -32,8 +32,7 @@ export default async function StudentReportPage({ params }: { params: { userId: 
   if (!data) notFound()
 
   const {
-    student, sessions, diagnostic, survey,
-    totalAtt, presentCnt, absentCnt, attendanceRate,
+    student, sessions, diagnostic, mathDiag, engDiag,
     topErrors, mathErrors, rwErrors, totalErrors, report,
   } = data
 
@@ -43,9 +42,9 @@ export default async function StudentReportPage({ params }: { params: { userId: 
   const maxErr      = topErrors.length > 0 ? topErrors[0].count : 1
 
   return (
-    <div className="p-8 max-w-5xl">
+    <div className="p-6 max-w-5xl">
       {/* Header */}
-      <div className="flex items-center gap-4 mb-8 print:hidden">
+      <div className="flex items-center gap-4 mb-6 print:hidden">
         <Link href="/admin/reports" className="text-gray-400 hover:text-gray-600">
           <ArrowLeft size={20} />
         </Link>
@@ -92,11 +91,11 @@ export default async function StudentReportPage({ params }: { params: { userId: 
               <div className="grid grid-cols-3 gap-2 text-center">
                 <div>
                   <p className="text-xs text-gray-500">Math</p>
-                  <p className="font-bold text-gray-900 text-lg">{(diagnostic as any).math_score ?? '—'}</p>
+                  <p className="font-bold text-gray-900 text-lg">{(mathDiag as any)?.math_score ?? '—'}</p>
                 </div>
                 <div>
                   <p className="text-xs text-gray-500">R&amp;W</p>
-                  <p className="font-bold text-gray-900 text-lg">{(diagnostic as any).rw_score ?? '—'}</p>
+                  <p className="font-bold text-gray-900 text-lg">{(engDiag ?? mathDiag as any)?.rw_score ?? '—'}</p>
                 </div>
                 <div>
                   <p className="text-xs text-gray-500">Tổng</p>
@@ -146,52 +145,31 @@ export default async function StudentReportPage({ params }: { params: { userId: 
             <p className="text-sm text-gray-400">Chưa làm bài tập nào</p>
           )}
 
-          {(survey as any)?.sat_target && (
-            <div className="mt-3 pt-3 border-t border-gray-100 flex justify-between text-sm">
-              <span className="text-gray-500">Mục tiêu SAT</span>
-              <span className="font-semibold text-gray-800">{(survey as any).sat_target}</span>
-            </div>
-          )}
         </div>
 
-        {/* Attendance */}
+        {/* Enrollment summary */}
         <div className="bg-white rounded-xl border border-gray-200 p-6">
-          <h2 className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-4">📅 Điểm danh</h2>
-          {totalAtt === 0 ? (
-            <p className="text-sm text-gray-400">Chưa có buổi học nào</p>
-          ) : (
-            <>
-              <div className="mb-4">
-                <div className="flex justify-between text-sm mb-2">
-                  <span className="text-gray-600">Tỷ lệ có mặt</span>
-                  <span className={`font-bold ${(attendanceRate ?? 0) >= 80 ? 'text-green-600' : (attendanceRate ?? 0) >= 60 ? 'text-yellow-600' : 'text-red-600'}`}>
-                    {attendanceRate ?? 0}%
-                  </span>
-                </div>
-                <div className="bg-gray-100 rounded-full h-3">
-                  <div
-                    className={`h-3 rounded-full ${(attendanceRate ?? 0) >= 80 ? 'bg-green-500' : (attendanceRate ?? 0) >= 60 ? 'bg-yellow-400' : 'bg-red-400'}`}
-                    style={{ width: `${attendanceRate ?? 0}%` }}
-                  />
-                </div>
+          <h2 className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-4">📚 Học tập</h2>
+          <div className="space-y-3">
+            <div className="flex justify-between text-sm">
+              <span className="text-gray-600">Số bài đã làm</span>
+              <span className="font-semibold text-gray-900">{sessions.length}</span>
+            </div>
+            {sessions.length > 0 && (
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-600">Điểm trung bình</span>
+                <span className="font-semibold text-gray-900">
+                  {Math.round((sessions as any[]).reduce((s, x) => s + (x.score ?? 0), 0) / sessions.length)}%
+                </span>
               </div>
-              <div className="grid grid-cols-3 gap-3 text-center">
-                <div className="bg-green-50 rounded-lg p-3">
-                  <p className="text-xl font-bold text-green-700">{presentCnt}</p>
-                  <p className="text-xs text-green-600">Có mặt</p>
-                </div>
-                <div className="bg-yellow-50 rounded-lg p-3">
-                  <p className="text-xl font-bold text-yellow-700">{totalAtt - presentCnt - absentCnt}</p>
-                  <p className="text-xs text-yellow-600">Muộn</p>
-                </div>
-                <div className="bg-red-50 rounded-lg p-3">
-                  <p className="text-xl font-bold text-red-700">{absentCnt}</p>
-                  <p className="text-xs text-red-600">Vắng</p>
-                </div>
-              </div>
-              <p className="text-xs text-gray-400 mt-3 text-center">Tổng {totalAtt} buổi học</p>
-            </>
-          )}
+            )}
+            <div className="flex justify-between text-sm">
+              <span className="text-gray-600">Tổng lỗi sai</span>
+              <span className={`font-semibold ${totalErrors > 10 ? 'text-red-600' : 'text-gray-900'}`}>
+                {totalErrors}
+              </span>
+            </div>
+          </div>
         </div>
       </div>
 

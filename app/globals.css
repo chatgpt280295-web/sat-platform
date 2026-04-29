@@ -120,4 +120,30 @@
   }
   .page-title  { @apply text-xl font-bold text-gray-900; }
   .page-subtitle { @apply text-sm text-gray-500 mt-0.5; }
+
+  /* ── Public landing page ─────────────────────── */
+  .course-card {
+    @apply bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden
+           hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 cursor-pointer;
+  }
+  .course-card-math    { @apply border-t-4 border-t-blue-500; }
+  .course-card-english { @apply border-t-4 border-t-purple-500; }
+
+  .subject-badge-math    { @apply badge bg-blue-100 text-blue-700; }
+  .subject-badge-english { @apply badge bg-purple-100 text-purple-700; }
+
+  .level-badge-1 { @apply badge bg-green-100 text-green-700; }
+  .level-badge-2 { @apply badge bg-amber-100 text-amber-700; }
+  .level-badge-3 { @apply badge bg-red-100 text-red-600; }
+
+  .btn-enroll-math    { @apply inline-flex items-center justify-center gap-2 w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 rounded-xl transition-colors; }
+  .btn-enroll-english { @apply inline-flex items-center justify-center gap-2 w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2.5 rounded-xl transition-colors; }
+
+  .public-navbar {
+    @apply fixed top-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-sm border-b border-gray-100;
+  }
+
+  .hero-gradient {
+    background: linear-gradient(135deg, #eff6ff 0%, #f5f3ff 50%, #fdf4ff 100%);
+  }
 }

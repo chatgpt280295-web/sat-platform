@@ -45,27 +45,25 @@ export default async function AdminIntakePage({
   if (intakeFilter === '0') filtered = filtered.filter(q => !q.is_intake)
 
   return (
-    <div className="p-8">
-      <div className="flex items-start justify-between mb-6">
+    <div className="p-6">
+      <div className="page-header">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Cấu hình bài kiểm tra đầu vào</h1>
-          <p className="text-sm text-gray-500 mt-1">
-            Chọn câu hỏi sẽ xuất hiện trong bài kiểm tra đầu vào (Intake Test) của học viên
-          </p>
+          <h1 className="page-title">Cấu hình bài kiểm tra đầu vào</h1>
+          <p className="page-subtitle">Chọn câu hỏi sẽ xuất hiện trong bài kiểm tra đầu vào (Intake Test)</p>
         </div>
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-4 gap-4 mb-6">
-        {[
-          { label: 'Math đã chọn',  value: mathIntake,  total: mathTotal,  color: 'blue'   },
-          { label: 'R&W đã chọn',   value: rwIntake,    total: rwTotal,    color: 'purple' },
-          { label: 'Tổng đã chọn',  value: mathIntake + rwIntake, total: questions.length, color: 'indigo' },
-          { label: 'Tổng câu hỏi',  value: questions.length, total: null, color: 'gray'   },
-        ].map(s => (
-          <div key={s.label} className={`bg-white border border-gray-200 rounded-2xl p-4`}>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        {([
+          { label: 'Math đã chọn',  value: mathIntake,  total: mathTotal,  cls: 'text-blue-600'   },
+          { label: 'R&W đã chọn',   value: rwIntake,    total: rwTotal,    cls: 'text-purple-600' },
+          { label: 'Tổng đã chọn',  value: mathIntake + rwIntake, total: questions.length, cls: 'text-indigo-600' },
+          { label: 'Tổng câu hỏi',  value: questions.length, total: null, cls: 'text-gray-700'  },
+        ] as const).map(s => (
+          <div key={s.label} className="bg-white border border-gray-200 rounded-2xl p-4">
             <p className="text-xs text-gray-500 mb-1">{s.label}</p>
-            <p className={`text-2xl font-bold text-${s.color}-600`}>{s.value}</p>
+            <p className={`text-2xl font-bold ${s.cls}`}>{s.value}</p>
             {s.total !== null && (
               <p className="text-xs text-gray-400 mt-0.5">/ {s.total} câu</p>
             )}

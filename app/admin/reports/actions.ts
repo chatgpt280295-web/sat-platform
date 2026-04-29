@@ -13,19 +13,18 @@ export async function getAllStudentsWithStats() {
   if (!students) return []
 
   const results = await Promise.all(students.map(async (s) => {
-    const [{ data: sessions }, { data: att }, { count: errCnt }] = await Promise.all([
+    const [{ data: sessions }, { count: errCnt }, { data: enrollments }, { data: lessonProgress }] = await Promise.all([
       admin.from('sessions')
         .select('score, finished_at')
         .eq('user_id', s.id)
         .not('finished_at', 'is', null)
         .order('finished_at', { ascending: false })
         .limit(10),
-      admin.from('attendances').select('status').eq('user_id', s.id),
       admin.from('error_logs').select('*', { count: 'exact', head: true }).eq('user_id', s.id),
+      admin.from('enrollments').select('course_id').eq('user_id', s.id),
+      admin.from('lesson_progress').select('course_id').eq('user_id', s.id),
     ])
 
-    const totalAtt = att?.length ?? 0
-    const presentCnt = att?.filter((a: any) => ['present', 'late'].includes(a.status ?? '')).length ?? 0
     const avgScore = sessions && sessions.length > 0
       ? Math.round(sessions.reduce((sum, x) => sum + (x.score ?? 0), 0) / sessions.length)
       : null
@@ -34,7 +33,8 @@ export async function getAllStudentsWithStats() {
       ...s,
       latestScore: sessions?.[0]?.score ?? null,
       avgScore,
-      attendanceRate: totalAtt > 0 ? Math.round(presentCnt / totalAtt * 100) : null,
+      enrolledCourses: enrollments?.length ?? 0,
+      completedLessons: lessonProgress?.length ?? 0,
       errorCount: errCnt ?? 0,
       sessionCount: sessions?.length ?? 0,
     }
@@ -48,10 +48,8 @@ export async function getStudentReportData(userId: string) {
   const [
     { data: student },
     { data: sessions },
-    { data: diagnostic },
-    { data: attendances },
+    { data: diagnostics },
     { data: errors },
-    { data: survey },
     { data: report },
   ] = await Promise.all([
     admin.from('users').select('id, full_name, email, tier, status').eq('id', userId).single(),
@@ -61,20 +59,13 @@ export async function getStudentReportData(userId: string) {
       .not('finished_at', 'is', null)
       .order('finished_at', { ascending: true }),
     admin.from('diagnostic_results')
-      .select('math_score, rw_score, total_score, tier, created_at')
+      .select('math_score, rw_score, total_score, subject, tier, created_at')
       .eq('user_id', userId)
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .maybeSingle(),
-    admin.from('attendances').select('status, checked_in_at').eq('user_id', userId),
+      .order('created_at', { ascending: false }),
     admin.from('error_logs')
       .select('domain, skill, created_at')
       .eq('user_id', userId)
       .order('created_at', { ascending: false }),
-    admin.from('intake_surveys')
-      .select('sat_target, english_level, school, grade')
-      .eq('user_id', userId)
-      .maybeSingle(),
     admin.from('progress_reports')
       .select('*')
       .eq('user_id', userId)
@@ -85,9 +76,10 @@ export async function getStudentReportData(userId: string) {
 
   if (!student) return null
 
-  const totalAtt = attendances?.length ?? 0
-  const presentCnt = attendances?.filter((a: any) => ['present', 'late'].includes(a.status ?? '')).length ?? 0
-  const absentCnt = attendances?.filter((a: any) => a.status === 'absent').length ?? 0
+  // Lấy diagnostic mới nhất và tách theo subject nếu có
+  const diagnostic = (diagnostics ?? [])[0] ?? null
+  const mathDiag   = (diagnostics ?? []).find((d: any) => d.subject === 'math') ?? diagnostic
+  const engDiag    = (diagnostics ?? []).find((d: any) => d.subject === 'english') ?? null
 
   const skillMap: Record<string, { count: number; domain: string }> = {}
   errors?.forEach((e: any) => {
@@ -105,15 +97,12 @@ export async function getStudentReportData(userId: string) {
     student,
     sessions: sessions ?? [],
     diagnostic,
-    totalAtt,
-    presentCnt,
-    absentCnt,
-    attendanceRate: totalAtt > 0 ? Math.round(presentCnt / totalAtt * 100) : null,
+    mathDiag,
+    engDiag,
     topErrors,
     mathErrors: errors?.filter((e: any) => e.domain === 'Math').length ?? 0,
     rwErrors: errors?.filter((e: any) => e.domain === 'Reading & Writing').length ?? 0,
     totalErrors: errors?.length ?? 0,
-    survey,
     report,
   }
 }

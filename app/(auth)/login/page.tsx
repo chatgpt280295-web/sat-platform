@@ -1,12 +1,19 @@
 'use client'
 
+// ── Imports ────────────────────────────────────────────────────────────────────
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
+import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { BookOpen, Eye, EyeOff, Loader2 } from 'lucide-react'
+import { Suspense } from 'react'
 
-export default function LoginPage() {
-  const router = useRouter()
+// ── Inner component (needs useSearchParams inside Suspense) ───────────────────
+function LoginForm() {
+  const router       = useRouter()
+  const searchParams = useSearchParams()
+  const redirectTo   = searchParams.get('redirect') || '/'
+
   const [email, setEmail]       = useState('')
   const [password, setPassword] = useState('')
   const [showPw, setShowPw]     = useState(false)
@@ -27,22 +34,24 @@ export default function LoginPage() {
       return
     }
 
-    // Middleware sẽ redirect đúng theo role
-    router.push('/')
+    // Redirect về trang trước đó hoặc về / để middleware xử lý
+    router.push(redirectTo)
     router.refresh()
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
 
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-600 rounded-2xl mb-4 shadow-lg">
-            <BookOpen className="w-8 h-8 text-white" />
-          </div>
+          <Link href="/" className="inline-flex flex-col items-center">
+            <div className="w-16 h-16 bg-blue-600 rounded-2xl mb-4 shadow-lg flex items-center justify-center">
+              <BookOpen className="w-8 h-8 text-white" />
+            </div>
+          </Link>
           <h1 className="text-2xl font-bold text-gray-900">SAT Platform</h1>
-          <p className="text-gray-500 text-sm mt-1">Đăng nhập để tiếp tục</p>
+          <p className="text-gray-500 text-sm mt-1">Đăng nhập để tiếp tục học</p>
         </div>
 
         {/* Form */}
@@ -83,8 +92,14 @@ export default function LoginPage() {
               </div>
             </div>
 
+            <div className="flex justify-end -mt-1">
+              <button type="button" className="text-xs text-blue-600 hover:text-blue-800 hover:underline transition-colors">
+                Quên mật khẩu?
+              </button>
+            </div>
+
             {error && (
-              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+              <div className="alert-error">
                 {error}
               </div>
             )}
@@ -95,10 +110,31 @@ export default function LoginPage() {
           </form>
         </div>
 
-        <p className="text-center text-xs text-gray-400 mt-6">
-          Chưa có tài khoản? Liên hệ giáo viên để được cấp quyền truy cập.
+        <p className="text-center text-sm text-gray-500 mt-6">
+          Chưa có tài khoản?{' '}
+          <Link
+            href={`/register${redirectTo !== '/' ? `?redirect=${encodeURIComponent(redirectTo)}` : ''}`}
+            className="text-blue-600 font-semibold hover:underline"
+          >
+            Đăng ký ngay
+          </Link>
+        </p>
+
+        <p className="text-center mt-3">
+          <Link href="/" className="text-xs text-gray-400 hover:text-gray-600 transition-colors">
+            ← Về trang chủ
+          </Link>
         </p>
       </div>
     </div>
+  )
+}
+
+// ── Page ──────────────────────────────────────────────────────────────────────
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-gray-50 flex items-center justify-center"><Loader2 className="animate-spin text-blue-600" size={32} /></div>}>
+      <LoginForm />
+    </Suspense>
   )
 }

@@ -42,10 +42,12 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="p-8 max-w-xl">
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-gray-900">Cài đặt tài khoản</h1>
-        <p className="text-sm text-gray-500 mt-1">Quản lý thông tin và bảo mật tài khoản của bạn</p>
+    <div className="p-6 max-w-xl">
+      <div className="page-header mb-6">
+        <div>
+          <h1 className="page-title">Cài đặt tài khoản</h1>
+          <p className="page-subtitle">Quản lý thông tin và bảo mật tài khoản của bạn</p>
+        </div>
       </div>
 
       <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">

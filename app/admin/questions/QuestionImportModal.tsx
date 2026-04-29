@@ -36,6 +36,8 @@ export default function QuestionImportModal({ onClose }: { onClose: () => void }
             <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-4 text-sm text-amber-800">
               <p className="font-medium mb-1">Cột bắt buộc:</p>
               <code className="text-xs">domain, skill, difficulty, content, option_a, option_b, option_c, option_d, correct_answer</code>
+              <p className="font-medium mb-1 mt-2">Cột tuỳ chọn:</p>
+              <code className="text-xs">source, explanation, image_url, is_intake (true/false)</code>
             </div>
             <div className="border-2 border-dashed border-gray-200 rounded-xl p-8 text-center mb-4">
               <Upload size={28} className="text-gray-300 mx-auto mb-3"/>

@@ -5,10 +5,13 @@ import { createAdminClient } from '@/lib/supabase/admin'
 
 export async function createAssignment(formData: FormData) {
   const admin = createAdminClient()
+  const passingScore = parseInt(formData.get('passing_score') as string || '70')
   const { data, error } = await admin.from('assignments').insert({
-    title:       formData.get('title')       as string,
-    description: formData.get('description') as string || null,
-    due_date:    formData.get('due_date')    as string || null,
+    title:         formData.get('title')       as string,
+    description:   formData.get('description') as string || null,
+    due_date:      formData.get('due_date')    as string || null,
+    course_id:     formData.get('course_id')   as string || null,
+    passing_score: isNaN(passingScore) ? 70 : passingScore,
   }).select('id').single()
   if (error) return { error: error.message }
   revalidatePath('/admin/assignments')

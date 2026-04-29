@@ -3,3 +3,4 @@ node_modules/
 .env.local
 *.node
 .DS_Store
+.gstack/

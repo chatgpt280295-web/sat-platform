@@ -1,6 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
-import { User, Target, BookOpen, TrendingUp } from 'lucide-react'
+import { User, Target, BookOpen, TrendingUp, type LucideIcon } from 'lucide-react'
 import Link from 'next/link'
 import ProfileClient from './ProfileClient'
 
@@ -48,8 +48,12 @@ export default async function StudentProfilePage() {
     .split(' ').map((w: string) => w[0]).slice(-2).join('').toUpperCase()
 
   return (
-    <div className="p-8 max-w-3xl">
-      <h1 className="text-2xl font-bold text-gray-900 mb-6">Hồ sơ học viên</h1>
+    <div className="p-6 max-w-3xl">
+      <div className="page-header mb-6">
+        <div>
+          <h1 className="page-title">Hồ sơ học viên</h1>
+        </div>
+      </div>
 
       {/* Avatar + basic info */}
       <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl p-6 mb-5 flex items-center gap-5">
@@ -74,21 +78,11 @@ export default async function StudentProfilePage() {
       </div>
 
       {/* Quick stats */}
-      <div className="grid grid-cols-4 gap-3 mb-5">
-        {[
-          { icon: BookOpen,   label: 'Bài đã làm',  value: sessionCount ?? 0,  color: 'blue'   },
-          { icon: User,       label: 'Buổi tham dự', value: attCount ?? 0,      color: 'teal'   },
-          { icon: TrendingUp, label: 'Điểm Math',    value: diagnostic?.math_score  ? `${Math.round(Number(diagnostic.math_score))}` : '—', color: 'purple' },
-          { icon: Target,     label: 'Mục tiêu',     value: survey?.sat_target  ? `${survey.sat_target}` : '—', color: 'amber'  },
-        ].map(({ icon: Icon, label, value, color }) => (
-          <div key={label} className="bg-white border border-gray-200 rounded-2xl p-4 text-center">
-            <div className={`w-8 h-8 bg-${color}-50 rounded-xl flex items-center justify-center mx-auto mb-2`}>
-              <Icon className={`w-4 h-4 text-${color}-600`} />
-            </div>
-            <p className="text-xl font-bold text-gray-900">{value}</p>
-            <p className="text-xs text-gray-500 mt-0.5">{label}</p>
-          </div>
-        ))}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
+        <StatCard icon={BookOpen}   label="Bài đã làm"   value={sessionCount ?? 0}                                                     iconCls="bg-blue-50 text-blue-600"   />
+        <StatCard icon={User}       label="Buổi tham dự" value={attCount ?? 0}                                                          iconCls="bg-teal-50 text-teal-600"   />
+        <StatCard icon={TrendingUp} label="Điểm Math"    value={diagnostic?.math_score ? `${Math.round(Number(diagnostic.math_score))}` : '—'} iconCls="bg-purple-50 text-purple-600" />
+        <StatCard icon={Target}     label="Mục tiêu"     value={survey?.sat_target ? `${survey.sat_target}` : '—'}                     iconCls="bg-amber-50 text-amber-600"  />
       </div>
 
       {/* Intake test scores — read only */}
@@ -146,6 +140,20 @@ export default async function StudentProfilePage() {
         fullName={profile.full_name}
         survey={survey ?? null}
       />
+    </div>
+  )
+}
+
+function StatCard({ icon: Icon, label, value, iconCls }: {
+  icon: LucideIcon; label: string; value: string | number; iconCls: string
+}) {
+  return (
+    <div className="bg-white border border-gray-200 rounded-2xl p-4 text-center">
+      <div className={`w-8 h-8 rounded-xl flex items-center justify-center mx-auto mb-2 ${iconCls}`}>
+        <Icon className="w-4 h-4" />
+      </div>
+      <p className="text-xl font-bold text-gray-900">{value}</p>
+      <p className="text-xs text-gray-500 mt-0.5">{label}</p>
     </div>
   )
 }

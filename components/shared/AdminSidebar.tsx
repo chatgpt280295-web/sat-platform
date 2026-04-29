@@ -1,24 +1,29 @@
 'use client'
 
+// ── Imports ────────────────────────────────────────────────────────────────────
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import {
   BookOpen, LayoutDashboard, Users, HelpCircle,
-  ClipboardList, GraduationCap, CalendarCheck, BarChart2, LogOut, FileCheck,
+  ClipboardList, BarChart2, LogOut, FileCheck,
+  ShoppingBag, GraduationCap, Home,
 } from 'lucide-react'
 
+// ── Nav items ─────────────────────────────────────────────────────────────────
 const NAV = [
-  { href: '/admin/dashboard',   label: 'Dashboard',    icon: LayoutDashboard },
-  { href: '/admin/classes',     label: 'Lớp học',      icon: GraduationCap   },
-  { href: '/admin/attendance',  label: 'Điểm danh',    icon: CalendarCheck   },
-  { href: '/admin/users',       label: 'Học viên',     icon: Users           },
-  { href: '/admin/questions',   label: 'Câu hỏi',      icon: HelpCircle      },
-  { href: '/admin/assignments', label: 'Bài tập',      icon: ClipboardList   },
-  { href: '/admin/intake',      label: 'Đầu vào',      icon: FileCheck       },
-  { href: '/admin/reports',     label: 'Báo cáo',      icon: BarChart2       },
+  { href: '/admin/dashboard',   label: 'Dashboard',   icon: LayoutDashboard },
+  { href: '/admin/courses',     label: 'Khóa học',    icon: GraduationCap   },
+  { href: '/admin/orders',      label: 'Đơn hàng',    icon: ShoppingBag     },
+  { href: '/admin/users',       label: 'Học viên',    icon: Users           },
+  { href: '/admin/questions',   label: 'Câu hỏi',     icon: HelpCircle      },
+  { href: '/admin/assignments', label: 'Bài tập',     icon: ClipboardList   },
+  { href: '/admin/intake',      label: 'Test đầu vào',icon: FileCheck       },
+  { href: '/admin/books',       label: 'Sách gợi ý',  icon: BookOpen        },
+  { href: '/admin/reports',     label: 'Báo cáo',     icon: BarChart2       },
 ]
 
+// ── Component ─────────────────────────────────────────────────────────────────
 export default function AdminSidebar() {
   const pathname = usePathname()
   const router   = useRouter()
@@ -31,18 +36,16 @@ export default function AdminSidebar() {
 
   return (
     <aside className="w-60 shrink-0 h-screen sticky top-0 bg-white border-r border-gray-200 flex flex-col">
-      <div className="px-5 py-5 border-b border-gray-100">
-        <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-            <BookOpen className="w-4 h-4 text-white" />
-          </div>
-          <div>
-            <div className="font-bold text-gray-900 text-sm leading-none">SAT Platform</div>
-            <div className="text-xs text-gray-400 mt-0.5">Quản trị viên</div>
-          </div>
+      <Link href="/" className="px-5 py-5 border-b border-gray-100 flex items-center gap-2.5 hover:bg-gray-50 transition-colors">
+        <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center shrink-0">
+          <BookOpen className="w-4 h-4 text-white" />
         </div>
-      </div>
-      <nav className="flex-1 px-3 py-4 space-y-0.5">
+        <div>
+          <div className="font-bold text-gray-900 text-sm leading-none">SAT Platform</div>
+          <div className="text-xs text-gray-400 mt-0.5">Quản trị viên</div>
+        </div>
+      </Link>
+      <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
         {NAV.map(({ href, label, icon: Icon }) => {
           const active = pathname === href || pathname.startsWith(href + '/')
           return (
@@ -54,7 +57,11 @@ export default function AdminSidebar() {
           )
         })}
       </nav>
-      <div className="px-3 py-4 border-t border-gray-100">
+      <div className="px-3 py-4 border-t border-gray-100 space-y-0.5">
+        <Link href="/" className="nav-item nav-item-default">
+          <Home size={17} />
+          <span>Trang chủ</span>
+        </Link>
         <button onClick={logout} className="nav-item nav-item-default w-full">
           <LogOut size={17} />
           <span>Đăng xuất</span>

@@ -37,7 +37,24 @@ export async function importQuestionsFromCSV(rows: Array<Record<string, string>>
   const required = ['domain','skill','difficulty','content','option_a','option_b','option_c','option_d','correct_answer']
   const valid    = rows.filter(r => required.every(k => r[k]))
   if (!valid.length) return { error: 'Không có dòng hợp lệ', count: 0 }
-  const { error } = await admin.from('questions').insert(valid)
+
+  const mapped = valid.map(r => ({
+    domain:         r.domain,
+    skill:          r.skill,
+    difficulty:     r.difficulty,
+    content:        r.content,
+    option_a:       r.option_a,
+    option_b:       r.option_b,
+    option_c:       r.option_c,
+    option_d:       r.option_d,
+    correct_answer: r.correct_answer,
+    source:         r.source      || null,
+    explanation:    r.explanation || null,
+    image_url:      r.image_url   || null,
+    is_intake:      r.is_intake === 'true' || r.is_intake === '1',
+  }))
+
+  const { error } = await admin.from('questions').insert(mapped)
   if (error) return { error: error.message, count: 0 }
   revalidatePath('/admin/questions')
   return { success: true, count: valid.length }

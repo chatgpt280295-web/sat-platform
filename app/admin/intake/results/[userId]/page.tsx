@@ -15,12 +15,15 @@ export default async function IntakeResultDetailPage({ params }: { params: { use
     .from('users').select('full_name, email, tier').eq('id', params.userId).single()
   if (!student) notFound()
 
-  const { data: diagnostic } = await admin
+  const { data: diagnostics } = await admin
     .from('diagnostic_results')
-    .select('math_score, rw_score, total_score, tier, created_at')
+    .select('math_score, rw_score, total_score, subject, tier, created_at')
     .eq('user_id', params.userId)
     .order('created_at', { ascending: false })
-    .limit(1).maybeSingle()
+
+  const diagnostic = (diagnostics ?? [])[0] ?? null
+  const mathDiag   = (diagnostics ?? []).find(d => d.subject === 'math')    ?? diagnostic
+  const engDiag    = (diagnostics ?? []).find(d => d.subject === 'english') ?? null
 
   const { data: intakeAnswers } = await admin
     .from('intake_answers')
@@ -39,7 +42,7 @@ export default async function IntakeResultDetailPage({ params }: { params: { use
   const tier = diagnostic?.tier ?? student.tier
 
   return (
-    <div className="p-8 max-w-4xl">
+    <div className="p-6 max-w-4xl">
       <Link href={`/admin/reports/${params.userId}`}
         className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 mb-4 w-fit">
         <ArrowLeft size={16} /> Quay lại báo cáo học viên
@@ -59,11 +62,11 @@ export default async function IntakeResultDetailPage({ params }: { params: { use
 
       {/* Score summary */}
       {diagnostic ? (
-        <div className="grid grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           {[
-            { label: 'Math',       value: diagnostic.math_score  ?? '—', color: 'text-blue-700',  bg: 'bg-blue-50'  },
-            { label: 'R&W',        value: diagnostic.rw_score    ?? '—', color: 'text-purple-700', bg: 'bg-purple-50' },
-            { label: 'Tổng SAT',   value: diagnostic.total_score ?? '—', color: 'text-gray-900',  bg: 'bg-gray-50'  },
+            { label: 'Math',     value: (mathDiag as any)?.math_score ?? '—', color: 'text-blue-700',  bg: 'bg-blue-50'   },
+            { label: 'R&W',      value: (engDiag ?? mathDiag as any)?.rw_score ?? '—', color: 'text-purple-700', bg: 'bg-purple-50' },
+            { label: 'Tổng SAT', value: (diagnostic as any).total_score ?? '—', color: 'text-gray-900', bg: 'bg-gray-50'  },
             { label: `Tier ${tier ?? '—'}`, value: tier ? tierLabel[tier] ?? '' : '—', color: 'text-green-700', bg: 'bg-green-50' },
           ].map(s => (
             <div key={s.label} className={`${s.bg} border border-gray-200 rounded-2xl p-4 text-center`}>
