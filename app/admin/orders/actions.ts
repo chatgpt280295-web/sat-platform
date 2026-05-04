@@ -1,11 +1,23 @@
 'use server'
 
 // ── Imports ────────────────────────────────────────────────────────────────────
+import { createServerClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { revalidatePath } from 'next/cache'
 
+// ── Auth guard ────────────────────────────────────────────────────────────────
+async function requireAdmin() {
+  const supabase = await createServerClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('Chưa đăng nhập')
+  const { data: profile } = await supabase
+    .from('users').select('role').eq('auth_id', user.id).single()
+  if (profile?.role !== 'admin') throw new Error('Không có quyền truy cập')
+}
+
 // ── Actions ────────────────────────────────────────────────────────────────────
 export async function approveOrder(orderId: string) {
+  await requireAdmin()
   const admin = createAdminClient()
 
   // Lấy order và items
@@ -49,6 +61,7 @@ export async function approveOrder(orderId: string) {
 }
 
 export async function rejectOrder(orderId: string, note: string) {
+  await requireAdmin()
   const admin = createAdminClient()
 
   const { error } = await admin

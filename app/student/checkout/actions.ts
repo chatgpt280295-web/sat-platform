@@ -66,10 +66,27 @@ export async function uploadPaymentProof(orderId: string, formData: FormData) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) throw new Error('Chưa đăng nhập')
 
+  const { data: profile } = await supabase
+    .from('users').select('id').eq('auth_id', user.id).single()
+  if (!profile) throw new Error('Không tìm thấy user')
+
+  // Verify order belongs to the caller
+  const { data: order } = await supabase
+    .from('orders').select('id').eq('id', orderId).eq('user_id', profile.id).single()
+  if (!order) throw new Error('Không tìm thấy đơn hàng')
+
   const file = formData.get('proof') as File
   if (!file || file.size === 0) throw new Error('Vui lòng chọn ảnh minh chứng')
 
-  const fileName = `${orderId}-${Date.now()}.${file.name.split('.').pop()}`
+  // Validate file type (images only)
+  const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
+  if (!ALLOWED_TYPES.includes(file.type)) throw new Error('Chỉ chấp nhận ảnh JPG, PNG, WebP hoặc GIF')
+
+  // Validate file size (max 5MB)
+  if (file.size > 5 * 1024 * 1024) throw new Error('Ảnh không được vượt quá 5MB')
+
+  const ext = file.name.split('.').pop()?.toLowerCase() ?? 'jpg'
+  const fileName = `${orderId}-${Date.now()}.${ext}`
 
   // Upload to Supabase Storage bucket 'payment-proofs'
   const { data: uploadData, error: uploadErr } = await admin.storage

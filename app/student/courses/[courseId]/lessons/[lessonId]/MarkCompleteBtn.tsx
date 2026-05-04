@@ -6,11 +6,9 @@ import { CheckCircle, Loader2 } from 'lucide-react'
 import { markLessonComplete } from './actions'
 
 export default function MarkCompleteBtn({
-  userId,
   lessonId,
   courseId,
 }: {
-  userId: string
   lessonId: string
   courseId: string
 }) {
@@ -19,7 +17,7 @@ export default function MarkCompleteBtn({
 
   function handleClick() {
     startTransition(async () => {
-      await markLessonComplete(userId, lessonId, courseId)
+      await markLessonComplete(lessonId, courseId)
       router.refresh()
     })
   }

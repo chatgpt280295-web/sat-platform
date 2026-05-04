@@ -57,6 +57,14 @@ export async function submitSession(
   sessionId: string,
   answers: Record<string, string>
 ) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Chưa đăng nhập' }
+
+  const { data: profile } = await supabase
+    .from('users').select('id').eq('auth_id', user.id).single()
+  if (!profile) return { error: 'Không tìm thấy user' }
+
   const admin = createAdminClient()
 
   // Fetch session with user_id for error logging
@@ -66,6 +74,9 @@ export async function submitSession(
     .eq('id', sessionId)
     .single()
   if (!session) return { error: 'Session không tồn tại' }
+
+  // Verify session belongs to the caller
+  if (session.user_id !== profile.id) return { error: 'Không có quyền truy cập' }
 
   // Fetch questions with correct answer + domain/skill for error analysis
   const { data: aqList } = await admin

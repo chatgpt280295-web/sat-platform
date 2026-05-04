@@ -156,7 +156,7 @@ export default async function LessonPage({ params }: { params: { courseId: strin
         <div className="flex-1" />
 
         {!isCompleted && (
-          <MarkCompleteBtn userId={profile.id} lessonId={params.lessonId} courseId={params.courseId} />
+          <MarkCompleteBtn lessonId={params.lessonId} courseId={params.courseId} />
         )}
 
         {/* If has linked quiz and not done → go to quiz instead of next lesson */}

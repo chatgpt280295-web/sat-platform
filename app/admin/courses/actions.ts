@@ -5,8 +5,19 @@ import { createServerClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { revalidatePath } from 'next/cache'
 
+// ── Auth guard ────────────────────────────────────────────────────────────────
+async function requireAdmin() {
+  const supabase = await createServerClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('Chưa đăng nhập')
+  const { data: profile } = await supabase
+    .from('users').select('role').eq('auth_id', user.id).single()
+  if (profile?.role !== 'admin') throw new Error('Không có quyền truy cập')
+}
+
 // ── Course actions ────────────────────────────────────────────────────────────
 export async function createCourse(formData: FormData) {
+  await requireAdmin()
   const supabase = createAdminClient()
 
   const { data, error } = await supabase
@@ -29,6 +40,7 @@ export async function createCourse(formData: FormData) {
 }
 
 export async function updateCourse(courseId: string, formData: FormData) {
+  await requireAdmin()
   const supabase = createAdminClient()
 
   const { error } = await supabase
@@ -50,6 +62,7 @@ export async function updateCourse(courseId: string, formData: FormData) {
 }
 
 export async function togglePublishCourse(courseId: string, isPublished: boolean) {
+  await requireAdmin()
   const supabase = createAdminClient()
 
   const { error } = await supabase
@@ -64,6 +77,7 @@ export async function togglePublishCourse(courseId: string, isPublished: boolean
 }
 
 export async function deleteCourse(courseId: string) {
+  await requireAdmin()
   const supabase = createAdminClient()
 
   const { error } = await supabase
@@ -78,6 +92,7 @@ export async function deleteCourse(courseId: string) {
 
 // ── Lesson actions ────────────────────────────────────────────────────────────
 export async function createLesson(courseId: string, formData: FormData) {
+  await requireAdmin()
   const supabase = createAdminClient()
 
   // Lấy position tiếp theo
@@ -109,6 +124,7 @@ export async function createLesson(courseId: string, formData: FormData) {
 }
 
 export async function updateLesson(lessonId: string, courseId: string, formData: FormData) {
+  await requireAdmin()
   const supabase = createAdminClient()
 
   const { error } = await supabase
@@ -129,6 +145,7 @@ export async function updateLesson(lessonId: string, courseId: string, formData:
 }
 
 export async function deleteLesson(lessonId: string, courseId: string) {
+  await requireAdmin()
   const supabase = createAdminClient()
 
   const { error } = await supabase
@@ -141,6 +158,7 @@ export async function deleteLesson(lessonId: string, courseId: string) {
 }
 
 export async function moveLessonPosition(lessonId: string, courseId: string, direction: 'up' | 'down') {
+  await requireAdmin()
   const supabase = createAdminClient()
 
   const { data: lessons } = await supabase
