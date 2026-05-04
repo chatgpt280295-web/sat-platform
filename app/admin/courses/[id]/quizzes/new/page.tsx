@@ -26,8 +26,9 @@ function NewQuizForm({ params }: { params: { id: string } }) {
 
     startTransition(async () => {
       try {
-        const quizId = await createAdminQuiz(params.id, formData)
-        router.push(`/admin/assignments/${quizId}`)
+        const res = await createAdminQuiz(params.id, formData)
+        if ('error' in res) { setError(res.error ?? 'Lỗi khi tạo quiz'); return }
+        router.push(`/admin/assignments/${res.id}`)
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Lỗi khi tạo quiz')
       }
