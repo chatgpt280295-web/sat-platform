@@ -54,6 +54,14 @@ export default function NewLessonPage({ params }: { params: { id: string } }) {
       formData.set('video_url', uploadedUrl)
     }
 
+    // Convert minutes to seconds
+    const durationMin = parseInt(formData.get('duration_s') as string)
+    if (!isNaN(durationMin) && durationMin > 0) {
+      formData.set('duration_s', String(durationMin * 60))
+    } else {
+      formData.delete('duration_s')
+    }
+
     startTransition(async () => {
       try {
         await createLesson(params.id, formData)
@@ -154,19 +162,7 @@ export default function NewLessonPage({ params }: { params: { id: string } }) {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="label">Thời lượng (phút)</label>
-              <input name="duration_s" type="number" min="0" className="input" placeholder="15"
-                onChange={e => {
-                  const input = e.currentTarget
-                  input.value = e.target.value
-                }}
-                onBlur={e => {
-                  // Convert minutes to seconds on save
-                  const minutes = parseInt(e.target.value)
-                  if (!isNaN(minutes)) {
-                    e.target.value = String(minutes * 60)
-                  }
-                }}
-              />
+              <input name="duration_s" type="number" min="0" className="input" placeholder="15" />
             </div>
             <div className="flex items-center gap-3 pt-5">
               <input type="checkbox" name="is_free" value="true" id="is_free"

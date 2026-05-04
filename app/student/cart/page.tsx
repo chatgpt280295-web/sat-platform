@@ -54,7 +54,7 @@ export default async function CartPage({ searchParams }: { searchParams: { add?:
         <div className="card p-12 text-center">
           <ShoppingCart size={48} className="text-gray-300 mx-auto mb-4" />
           <p className="text-gray-500 font-medium mb-4">Giỏ hàng trống</p>
-          <Link href="/" className="btn-primary">Xem khóa học</Link>
+          <Link href="/courses" className="btn-primary">Xem khóa học</Link>
         </div>
       ) : (
         <div className="space-y-4">
